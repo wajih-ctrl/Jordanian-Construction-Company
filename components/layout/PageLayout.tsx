@@ -5,8 +5,8 @@ import { Header } from './Header';
 import { useApp } from '@/context/AppContext';
 import Link from 'next/link';
 import { BarChart3, CheckSquare, FileText, FolderOpen, LayoutDashboard, Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ROLE_ROUTE_PERMISSIONS } from '@/lib/constants';
 
 interface PageLayoutProps {
@@ -18,14 +18,30 @@ interface PageLayoutProps {
 export function PageLayout({ children, title, breadcrumbs }: PageLayoutProps) {
   const { currentUser, loading } = useApp();
   const router = useRouter();
+  const pathname = usePathname();
+  const [routeAllowed, setRouteAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!loading && !currentUser) {
-      router.replace('/');
+    if (loading) {
+      return;
     }
-  }, [currentUser, loading, router]);
 
-  if (loading) {
+    if (!currentUser) {
+      router.replace('/');
+      return;
+    }
+
+    const allowedRoutes = ROLE_ROUTE_PERMISSIONS[currentUser.role] || [];
+    const isAllowed = !pathname || allowedRoutes.some((allowedRoute) => pathname === allowedRoute || pathname.startsWith(`${allowedRoute}/`));
+
+    if (!isAllowed && pathname !== '/') {
+      router.replace('/dashboard');
+    }
+
+    setRouteAllowed(isAllowed || pathname === '/');
+  }, [currentUser, loading, pathname, router]);
+
+  if (loading || routeAllowed === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-sm font-semibold text-slate-500">
         Loading workspace...
@@ -41,15 +57,12 @@ export function PageLayout({ children, title, breadcrumbs }: PageLayoutProps) {
     );
   }
 
-  const routePath = typeof window !== 'undefined' ? window.location.pathname : '';
-  const allowedRoutes = ROLE_ROUTE_PERMISSIONS[currentUser.role] || [];
-  const isRouteAllowed = routePath
-    ? allowedRoutes.some((allowedRoute) => routePath === allowedRoute || routePath.startsWith(`${allowedRoute}/`))
-    : true;
-
-  if (routePath && !isRouteAllowed && routePath !== '/') {
-    router.replace('/dashboard');
-    return null;
+  if (routeAllowed === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-sm font-semibold text-slate-500">
+        Redirecting to dashboard...
+      </div>
+    );
   }
 
   return (

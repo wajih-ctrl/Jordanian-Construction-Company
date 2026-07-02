@@ -19,10 +19,86 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-export default function DashboardPage() {
-  const { selectedProject, records, actions } = useApp();
+function getDashboardMetrics(role: string, projectRecords: any[], projectActions: any[]) {
+  const openActions = projectActions.filter((action) => action.status !== 'Closed');
+  const overdueActions = projectActions.filter((action) => action.status === 'Overdue' || action.status === 'Escalated');
+  const pendingApprovals = projectRecords.filter((record) => record.mainCategory === 'Approval' || record.status === 'In Review');
+  const programmeCount = projectRecords.filter((record) => record.hasProgrammeImpact).length;
+  const costClaimCount = projectRecords.filter((record) => record.hasCostImpact || record.hasClaimRisk).length;
+  const recentRecords = projectRecords.filter((record) => {
+    const diffDays = (new Date().getTime() - record.dateReceived.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
+  const linkableItems = projectRecords.filter((record) => ['Instruction', 'Approval', 'Variation', 'Claim'].includes(record.mainCategory)).length;
+  const claimRiskCount = projectRecords.filter((record) => record.hasClaimRisk).length;
+  const costImpactCount = projectRecords.filter((record) => record.hasCostImpact).length;
 
-  if (!selectedProject) {
+  const baseMetrics = [
+    { label: 'Total Records', value: projectRecords.length, helper: 'Logged correspondence and site records', icon: FileText, href: '/records', tone: 'text-sky-600 bg-sky-500/10 border-sky-500/20' },
+    { label: 'Open Actions', value: openActions.length, helper: 'Owner follow-ups still active', icon: CheckCircle2, href: '/actions', tone: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Overdue / Escalated', value: overdueActions.length, helper: 'Responses needing attention', icon: AlertTriangle, href: '/actions', tone: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+    { label: 'Pending Approvals', value: pendingApprovals.length, helper: 'Engineer or client sign-off', icon: Clock3, href: '/search', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+    { label: 'Programme Impact', value: programmeCount, helper: 'Potential time events', icon: TrendingUp, href: '/programme', tone: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
+    { label: 'Cost / Claim Risk', value: costClaimCount, helper: 'Commercial watch items', icon: DollarSign, href: '/cost-impact', tone: 'text-orange-600 bg-orange-500/10 border-orange-500/20' },
+  ];
+
+  switch (role) {
+    case 'PM':
+      return [
+        baseMetrics[0],
+        baseMetrics[1],
+        baseMetrics[2],
+        baseMetrics[3],
+        baseMetrics[4],
+        { label: 'Project Delay Items', value: programmeCount, helper: 'Schedule risk and programme impact', icon: TrendingUp, href: '/programme', tone: 'text-violet-600 bg-violet-500/10 border-violet-500/20' },
+      ];
+    case 'DC':
+      return [
+        baseMetrics[0],
+        { label: 'Records in Last 7 Days', value: recentRecords, helper: 'Recent record entries', icon: FileText, href: '/records', tone: 'text-slate-600 bg-slate-500/10 border-slate-500/20' },
+        baseMetrics[3],
+        { label: 'Approval Queue', value: pendingApprovals.length, helper: 'Review and sign-off items', icon: Clock3, href: '/search', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+        { label: 'Programme References', value: programmeCount, helper: 'Linked programme events', icon: TrendingUp, href: '/search', tone: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
+        { label: 'Claim Watch', value: costClaimCount, helper: 'Records with commercial risk', icon: DollarSign, href: '/search', tone: 'text-orange-600 bg-orange-500/10 border-orange-500/20' },
+      ];
+    case 'PT':
+      return [
+        { label: 'Programme Impact', value: programmeCount, helper: 'Potential time events', icon: TrendingUp, href: '/programme', tone: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
+        { label: 'Delay Watch', value: projectRecords.filter((record) => record.mainCategory === 'Delay').length, helper: 'Design or site delay events', icon: AlertCircle, href: '/timeline', tone: 'text-cyan-600 bg-cyan-500/10 border-cyan-500/20' },
+        baseMetrics[3],
+        { label: 'Search Records', value: projectRecords.length, helper: 'Filter programme and delay items', icon: Search, href: '/search', tone: 'text-slate-600 bg-slate-500/10 border-slate-500/20' },
+        { label: 'Timeline Items', value: projectRecords.length, helper: 'Linked schedule events', icon: Clock3, href: '/timeline', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+        { label: 'High Risk Records', value: highRiskRecords.length, helper: 'Critical programme and claim items', icon: AlertTriangle, href: '/search', tone: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
+      ];
+    case 'CT':
+      return [
+        baseMetrics[5],
+        { label: 'Claim Risk', value: claimRiskCount, helper: 'Contractual and commercial risks', icon: AlertCircle, href: '/cost-impact', tone: 'text-red-600 bg-red-500/10 border-red-500/20' },
+        { label: 'Cost Items', value: costImpactCount, helper: 'Budget and variation exposure', icon: DollarSign, href: '/cost-impact', tone: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
+        { label: 'Search Records', value: projectRecords.length, helper: 'Review claimed and approved items', icon: Search, href: '/search', tone: 'text-slate-600 bg-slate-500/10 border-slate-500/20' },
+        { label: 'Decision Trail', value: projectRecords.length, helper: 'Review reports and trends', icon: FolderOpen, href: '/reports', tone: 'text-violet-600 bg-violet-500/10 border-violet-500/20' },
+        { label: 'Project Snapshot', value: projectRecords.length, helper: 'Summary of active records', icon: FileText, href: '/search', tone: 'text-sky-600 bg-sky-500/10 border-sky-500/20' },
+      ];
+    case 'CE':
+      return [
+        { label: 'Linkable Items', value: linkableItems, helper: 'Instructions, approvals, and variations', icon: LinkIcon, href: '/linking', tone: 'text-cyan-600 bg-cyan-500/10 border-cyan-500/20' },
+        { label: 'Search Records', value: projectRecords.length, helper: 'Find approvals and instructions', icon: Search, href: '/search', tone: 'text-slate-600 bg-slate-500/10 border-slate-500/20' },
+        { label: 'Pending Review', value: pendingApprovals.length, helper: 'Approval and instruction items', icon: Clock3, href: '/search', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+        { label: 'Decision Trail', value: projectRecords.length, helper: 'Review linked record history', icon: FolderOpen, href: '/reports', tone: 'text-violet-600 bg-violet-500/10 border-violet-500/20' },
+        { label: 'Record Search', value: projectRecords.length, helper: 'Browse instructions and approvals', icon: FileText, href: '/search', tone: 'text-sky-600 bg-sky-500/10 border-sky-500/20' },
+        { label: 'Approval Queue', value: pendingApprovals.length, helper: 'Review confirmations and instructions', icon: Clock3, href: '/search', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
+      ];
+    case 'ADMIN':
+      return baseMetrics;
+    default:
+      return baseMetrics;
+  }
+}
+
+export default function DashboardPage() {
+  const { selectedProject, records, actions, currentUser } = useApp();
+
+  if (!selectedProject || !currentUser) {
     return (
       <PageLayout title="Dashboard">
         <div className="p-8 text-sm font-semibold text-slate-500">Loading selected project...</div>
@@ -38,14 +114,7 @@ export default function DashboardPage() {
   const pendingApprovals = projectRecords.filter((record) => record.mainCategory === 'Approval' || record.status === 'In Review');
   const recentRecords = [...projectRecords].sort((a, b) => b.dateReceived.getTime() - a.dateReceived.getTime()).slice(0, 6);
 
-  const metrics = [
-    { label: 'Total Records', value: projectRecords.length, helper: 'Logged correspondence and site records', icon: FileText, href: '/records', tone: 'text-sky-600 bg-sky-500/10 border-sky-500/20' },
-    { label: 'Open Actions', value: openActions.length, helper: 'Owner follow-ups still active', icon: CheckCircle2, href: '/actions', tone: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' },
-    { label: 'Overdue / Escalated', value: overdueActions.length, helper: 'Responses needing attention', icon: AlertTriangle, href: '/actions', tone: 'text-rose-600 bg-rose-500/10 border-rose-500/20' },
-    { label: 'Pending Approvals', value: pendingApprovals.length, helper: 'Engineer or client sign-off', icon: Clock3, href: '/search', tone: 'text-amber-600 bg-amber-500/10 border-amber-500/20' },
-    { label: 'Programme Impact', value: projectRecords.filter((record) => record.hasProgrammeImpact).length, helper: 'Potential time events', icon: TrendingUp, href: '/programme', tone: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20' },
-    { label: 'Cost / Claim Risk', value: projectRecords.filter((record) => record.hasCostImpact || record.hasClaimRisk).length, helper: 'Commercial watch items', icon: DollarSign, href: '/cost-impact', tone: 'text-orange-600 bg-orange-500/10 border-orange-500/20' },
-  ];
+  const metrics = getDashboardMetrics(currentUser.role, projectRecords, projectActions);
 
   const categoryCounts = projectRecords.reduce<Record<string, number>>((acc, record) => {
     acc[record.mainCategory] = (acc[record.mainCategory] || 0) + 1;
