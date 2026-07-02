@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { DISCIPLINES, RECORD_CATEGORIES, RECORD_STATUSES } from '@/lib/constants';
 
 export default function RecordsPage() {
-  const { selectedProject, records } = useApp();
+  const { currentUser, selectedProject, records } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
@@ -42,6 +42,7 @@ export default function RecordsPage() {
   if (selectedStatus) filteredRecords = filteredRecords.filter((record) => record.status === selectedStatus);
 
   const projectRecords = records.filter((record) => record.projectId === selectedProject.id);
+  const canAddRecord = currentUser?.role === 'DC' || currentUser?.role === 'ADMIN';
 
   return (
     <PageLayout title="Records">
@@ -53,9 +54,11 @@ export default function RecordsPage() {
               <h2 className="mt-2 text-2xl font-bold text-slate-950">{selectedProject.name}</h2>
               <p className="mt-2 text-sm text-slate-500">Search, filter, and open project records with linked programme, cost, and claim impacts.</p>
             </div>
-            <Link href="/records/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-              <FilePlus2 className="w-4 h-4" /> Add Record
-            </Link>
+            {canAddRecord && (
+              <Link href="/records/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                <FilePlus2 className="w-4 h-4" /> Add Record
+              </Link>
+            )}
           </div>
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">

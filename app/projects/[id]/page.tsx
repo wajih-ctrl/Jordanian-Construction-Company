@@ -13,7 +13,7 @@ import Link from 'next/link';
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { projects, records, actions, loading } = useApp();
+  const { currentUser, projects, records, actions, loading } = useApp();
   const normalizedProjectId = (projectId || '').toString().toLowerCase();
   const project = projects.find((p) => {
     const normalizedId = p.id.toLowerCase();
@@ -48,6 +48,10 @@ export default function ProjectDetailPage() {
   const programmeImpacts = projectRecords.filter((r) => r.hasProgrammeImpact);
   const costImpacts = projectRecords.filter((r) => r.hasCostImpact);
   const claimRisks = projectRecords.filter((r) => r.hasClaimRisk);
+  const role = currentUser?.role;
+  const canSeeActions = role === 'PM' || role === 'PT' || role === 'CT' || role === 'CE' || role === 'ADMIN';
+  const canSeeProgramme = role === 'PT' || role === 'ADMIN';
+  const canSeeCost = role === 'CT' || role === 'ADMIN';
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -57,7 +61,13 @@ export default function ProjectDetailPage() {
     { id: 'cost', label: `Cost Impact (${costImpacts.length})` },
     { id: 'reports', label: 'Reports & Trail' },
     { id: 'settings', label: 'Settings' },
-  ];
+  ].filter((tab) => {
+    if (tab.id === 'actions') return canSeeActions;
+    if (tab.id === 'programme') return canSeeProgramme;
+    if (tab.id === 'cost') return canSeeCost;
+    if (tab.id === 'settings') return role === 'ADMIN';
+    return true;
+  });
 
   return (
     <PageLayout title={project.name}>

@@ -9,6 +9,15 @@ export const USER_ROLES: { label: string; value: UserRole; description: string }
   { value: 'ADMIN', label: 'Administrator', description: 'System administration' },
 ];
 
+export const ROLE_NAV_PATHS: Record<UserRole, string[]> = {
+  PM: ['/dashboard', '/projects', '/records', '/actions', '/search', '/reports'],
+  DC: ['/dashboard', '/projects', '/records', '/linking', '/search', '/reports'],
+  PT: ['/dashboard', '/projects', '/records', '/timeline', '/programme', '/actions', '/search', '/reports'],
+  CT: ['/dashboard', '/projects', '/records', '/cost-impact', '/actions', '/search', '/reports'],
+  CE: ['/dashboard', '/projects', '/records', '/linking', '/actions', '/search', '/reports'],
+  ADMIN: ['/dashboard', '/projects', '/records', '/linking', '/timeline', '/actions', '/programme', '/cost-impact', '/search', '/reports', '/admin'],
+};
+
 export const RECORD_CATEGORIES: RecordCategory[] = [
   'Progress',
   'Variation',

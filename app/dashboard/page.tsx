@@ -4,6 +4,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ImpactChip } from '@/components/shared/ImpactChip';
+import { ROLE_NAV_PATHS } from '@/lib/constants';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -50,8 +51,8 @@ function getDashboardMetrics(role: string, projectRecords: any[], projectActions
         baseMetrics[1],
         baseMetrics[2],
         baseMetrics[3],
-        baseMetrics[4],
-        { label: 'Project Delay Items', value: programmeCount, helper: 'Schedule risk and programme impact', icon: TrendingUp, href: '/programme', tone: 'text-violet-600 bg-violet-500/10 border-violet-500/20' },
+        { ...baseMetrics[4], href: '/search' },
+        { label: 'Project Delay Items', value: programmeCount, helper: 'Schedule risk and programme impact', icon: TrendingUp, href: '/reports', tone: 'text-violet-600 bg-violet-500/10 border-violet-500/20' },
       ];
     case 'DC':
       return [
@@ -96,6 +97,53 @@ function getDashboardMetrics(role: string, projectRecords: any[], projectActions
   }
 }
 
+function getQuickActions(role: string) {
+  switch (role) {
+    case 'PM':
+      return [
+        { label: 'Review Actions', href: '/actions', primary: true },
+        { label: 'Records', href: '/records' },
+        { label: 'Report', href: '/reports' },
+      ];
+    case 'DC':
+      return [
+        { label: 'Log Record', href: '/records/new', primary: true },
+        { label: 'Tag & Link', href: '/linking' },
+        { label: 'Search', href: '/search' },
+      ];
+    case 'PT':
+      return [
+        { label: 'Programme', href: '/programme', primary: true },
+        { label: 'Timeline', href: '/timeline' },
+        { label: 'Actions', href: '/actions' },
+      ];
+    case 'CT':
+      return [
+        { label: 'Cost/Claim', href: '/cost-impact', primary: true },
+        { label: 'Actions', href: '/actions' },
+        { label: 'Report', href: '/reports' },
+      ];
+    case 'CE':
+      return [
+        { label: 'Review Records', href: '/records', primary: true },
+        { label: 'Approvals', href: '/search' },
+        { label: 'Actions', href: '/actions' },
+      ];
+    case 'ADMIN':
+      return [
+        { label: 'Admin', href: '/admin', primary: true },
+        { label: 'Projects', href: '/projects' },
+        { label: 'Reports', href: '/reports' },
+      ];
+    default:
+      return [
+        { label: 'Records', href: '/records', primary: true },
+        { label: 'Actions', href: '/actions' },
+        { label: 'Reports', href: '/reports' },
+      ];
+  }
+}
+
 export default function DashboardPage() {
   const { selectedProject, records, actions, currentUser } = useApp();
 
@@ -116,6 +164,11 @@ export default function DashboardPage() {
   const recentRecords = [...projectRecords].sort((a, b) => b.dateReceived.getTime() - a.dateReceived.getTime()).slice(0, 6);
 
   const metrics = getDashboardMetrics(currentUser.role, projectRecords, projectActions);
+  const quickActions = getQuickActions(currentUser.role);
+  const canOpen = (path: string) => ROLE_NAV_PATHS[currentUser.role].includes(path);
+  const responseQueueHref = canOpen('/actions') ? '/actions' : '/records';
+  const highRiskHref = canOpen('/cost-impact') ? '/cost-impact' : '/search';
+  const decisionTrailHref = canOpen('/linking') ? '/linking' : '/reports';
 
   const categoryCounts = projectRecords.reduce<Record<string, number>>((acc, record) => {
     acc[record.mainCategory] = (acc[record.mainCategory] || 0) + 1;
@@ -147,15 +200,19 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:min-w-[360px]">
-                <Link href="/records/new" className="rounded-lg bg-primary text-primary-foreground px-3 py-3 text-center text-xs font-bold hover:bg-primary/90">
-                  Log Record
-                </Link>
-                <Link href="/linking" className="rounded-lg border border-border bg-background px-3 py-3 text-center text-xs font-bold text-foreground hover:bg-secondary">
-                  Link Items
-                </Link>
-                <Link href="/reports" className="rounded-lg border border-border bg-background px-3 py-3 text-center text-xs font-bold text-foreground hover:bg-secondary">
-                  Report
-                </Link>
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={`rounded-lg px-3 py-3 text-center text-xs font-bold ${
+                      action.primary
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        : 'border border-border bg-background text-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    {action.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -180,7 +237,7 @@ export default function DashboardPage() {
             <div className="p-5 sm:p-6 border-b lg:border-b-0 lg:border-r border-border/60">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-foreground">Response Queue</h3>
-                <Link href="/actions" className="text-xs font-bold text-primary inline-flex items-center gap-1">
+                <Link href={responseQueueHref} className="text-xs font-bold text-primary inline-flex items-center gap-1">
                   Manage <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
@@ -201,7 +258,7 @@ export default function DashboardPage() {
             <div className="p-5 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-foreground">High-Risk Watchlist</h3>
-                <Link href="/cost-impact" className="text-xs font-bold text-primary inline-flex items-center gap-1">
+                <Link href={highRiskHref} className="text-xs font-bold text-primary inline-flex items-center gap-1">
                   Review <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
@@ -298,7 +355,7 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/linking" className="rounded-xl border border-border/70 bg-card p-5 shadow-sm hover:border-primary/50">
+          <Link href={decisionTrailHref} className="rounded-xl border border-border/70 bg-card p-5 shadow-sm hover:border-primary/50">
             <h3 className="font-bold text-foreground mb-3 flex items-center gap-2"><LinkIcon className="w-4 h-4 text-primary" /> Decision Trail Ready</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">Cross-link correspondence to variations, delays, approvals, programme impact, cost impact, responsible parties, and claim risk.</p>
             <span className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-primary">Open cross-linking <ArrowRight className="w-3 h-3" /></span>

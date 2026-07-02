@@ -3,9 +3,10 @@
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useApp } from '@/context/AppContext';
+import { ROLE_NAV_PATHS } from '@/lib/constants';
 import Link from 'next/link';
 import { BarChart3, CheckSquare, Clock, DollarSign, FileText, FolderOpen, LayoutDashboard, Link as LinkIcon, Search, Settings, TrendingUp } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface PageLayoutProps {
@@ -17,6 +18,7 @@ interface PageLayoutProps {
 export function PageLayout({ children, title, breadcrumbs }: PageLayoutProps) {
   const { currentUser, loading } = useApp();
   const router = useRouter();
+  const pathname = usePathname();
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -29,8 +31,21 @@ export function PageLayout({ children, title, breadcrumbs }: PageLayoutProps) {
       return;
     }
 
+    if (pathname === '/records/new' && !['DC', 'ADMIN'].includes(currentUser.role)) {
+      router.replace('/dashboard');
+      return;
+    }
+
+    const allowedPaths = ROLE_NAV_PATHS[currentUser.role];
+    const allowed = !pathname || allowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+
+    if (!allowed) {
+      router.replace('/dashboard');
+      return;
+    }
+
     setAuthChecked(true);
-  }, [currentUser, loading, router]);
+  }, [currentUser, loading, pathname, router]);
 
   if (loading || !authChecked) {
     return (
@@ -60,7 +75,7 @@ export function PageLayout({ children, title, breadcrumbs }: PageLayoutProps) {
     { href: '/search', label: 'Search', icon: Search },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
     { href: '/admin', label: 'Admin', icon: Settings },
-  ];
+  ].filter((item) => ROLE_NAV_PATHS[currentUser.role].includes(item.href));
 
   return (
     <div className="flex h-screen bg-background text-slate-900 overflow-hidden">
