@@ -29,6 +29,11 @@ interface AppContextType {
   selectedProject: Project | null;
   setSelectedProject: (project: Project | null) => void;
 
+  // User Mutations
+  addUser: (user: User) => void;
+  updateUser: (user: User) => void;
+  deleteUser: (id: string) => void;
+
   // Records Mutations
   updateRecord: (record: Record) => void;
   addRecord: (record: Record) => void;
@@ -53,7 +58,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const mockUsers = generateMockUsers();
+    const savedUsersJson = typeof window !== 'undefined' ? window.localStorage.getItem('jordanianCompanyUsers') : null;
+    const mockUsers = savedUsersJson ? (JSON.parse(savedUsersJson) as User[]) : generateMockUsers();
     const mockProjects = generateMockProjects();
     const mockRecords = generateMockRecords();
     const mockActions = generateMockActions(mockRecords);
@@ -75,6 +81,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSelectedProject(savedProject || mockProjects[0]);
     setLoading(false);
   }, []);
+
+  const persistUsers = (nextUsers: User[]) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('jordanianCompanyUsers', JSON.stringify(nextUsers));
+  };
+
+  const addUser = (user: User) => {
+    setUsers((prev) => {
+      const next = [...prev, user];
+      persistUsers(next);
+      return next;
+    });
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUsers((prev) => {
+      const next = prev.map((user) => (user.id === updatedUser.id ? updatedUser : user));
+      persistUsers(next);
+      return next;
+    });
+  };
+
+  const deleteUser = (id: string) => {
+    setUsers((prev) => {
+      const next = prev.filter((user) => user.id !== id);
+      persistUsers(next);
+      return next;
+    });
+  };
 
   const handleSetCurrentUser = (user: User | null) => {
     setCurrentUser(user);
@@ -140,6 +175,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     costImpacts,
     selectedProject,
     setSelectedProject: handleSetSelectedProject,
+    addUser,
+    updateUser,
+    deleteUser,
     updateRecord,
     addRecord,
     deleteRecord,
