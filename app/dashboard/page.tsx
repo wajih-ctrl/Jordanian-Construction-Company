@@ -32,6 +32,7 @@ function getDashboardMetrics(role: string, projectRecords: any[], projectActions
   const linkableItems = projectRecords.filter((record) => ['Instruction', 'Approval', 'Variation', 'Claim'].includes(record.mainCategory)).length;
   const claimRiskCount = projectRecords.filter((record) => record.hasClaimRisk).length;
   const costImpactCount = projectRecords.filter((record) => record.hasCostImpact).length;
+  const highRiskRecords = projectRecords.filter((record) => record.hasClaimRisk || record.priority === 'Critical' || record.priority === 'High');
 
   const baseMetrics = [
     { label: 'Total Records', value: projectRecords.length, helper: 'Logged correspondence and site records', icon: FileText, href: '/records', tone: 'text-sky-600 bg-sky-500/10 border-sky-500/20' },
@@ -131,7 +132,7 @@ export default function DashboardPage() {
 
   return (
     <PageLayout title="Dashboard">
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 overflow-auto">
+      <div className="min-w-0 p-4 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
         <section className="rounded-2xl border border-border/70 bg-card shadow-sm overflow-hidden">
           <div className="p-5 sm:p-7 border-b border-border/60 bg-[linear-gradient(135deg,rgba(14,165,233,0.10),rgba(16,185,129,0.08),transparent)]">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
@@ -145,7 +146,7 @@ export default function DashboardPage() {
                   {selectedProject.client} - {selectedProject.location}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 min-w-full sm:min-w-[360px]">
+              <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:min-w-[360px]">
                 <Link href="/records/new" className="rounded-lg bg-primary text-primary-foreground px-3 py-3 text-center text-xs font-bold hover:bg-primary/90">
                   Log Record
                 </Link>
@@ -251,7 +252,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden">
+          <Link href="/search" className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden hover:border-primary/50">
             <div className="p-5 border-b border-border/60">
               <h3 className="font-bold text-foreground">Records by Category</h3>
             </div>
@@ -268,11 +269,11 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Link>
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
+          <Link href="/projects" className="rounded-xl border border-border/70 bg-card p-5 shadow-sm hover:border-primary/50">
             <h3 className="font-bold text-foreground mb-4 flex items-center gap-2"><FolderOpen className="w-4 h-4 text-primary" /> Project Controls Snapshot</h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-background border border-border/60 p-3"><p className="text-muted-foreground text-xs">Stakeholders</p><p className="font-bold text-foreground">{selectedProject.stakeholders.length}</p></div>
@@ -280,9 +281,9 @@ export default function DashboardPage() {
               <div className="rounded-lg bg-background border border-border/60 p-3"><p className="text-muted-foreground text-xs">Cost Items</p><p className="font-bold text-foreground">{projectRecords.filter((record) => record.hasCostImpact).length}</p></div>
               <div className="rounded-lg bg-background border border-border/60 p-3"><p className="text-muted-foreground text-xs">Closed</p><p className="font-bold text-foreground">{projectRecords.filter((record) => record.status === 'Closed').length}</p></div>
             </div>
-          </div>
+          </Link>
 
-          <div className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
+          <Link href="/search" className="rounded-xl border border-border/70 bg-card p-5 shadow-sm hover:border-primary/50">
             <h3 className="font-bold text-foreground mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-primary" /> Discipline Load</h3>
             <div className="space-y-3">
               {Object.entries(disciplineCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([discipline, count]) => (
@@ -295,7 +296,7 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Link>
 
           <Link href="/linking" className="rounded-xl border border-border/70 bg-card p-5 shadow-sm hover:border-primary/50">
             <h3 className="font-bold text-foreground mb-3 flex items-center gap-2"><LinkIcon className="w-4 h-4 text-primary" /> Decision Trail Ready</h3>

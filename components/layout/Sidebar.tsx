@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { ROLE_ROUTE_PERMISSIONS } from '@/lib/constants';
 import {
   LayoutDashboard,
   FolderOpen,
@@ -45,10 +44,6 @@ export function Sidebar() {
     { path: '/admin', label: 'Admin', icon: Settings },
   ];
 
-  const allowedNavItems = currentUser
-    ? navItems.filter((item) => ROLE_ROUTE_PERMISSIONS[currentUser.role].includes(item.path))
-    : navItems;
-
   return (
     <aside className={`hidden md:flex ${collapsed ? 'w-20' : 'w-72'} bg-white border-r border-slate-200 h-screen flex-col shadow-sm transition-all duration-200`}>
       {/* Branded Header */}
@@ -76,7 +71,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3">
         <div className="space-y-1">
-          {allowedNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (

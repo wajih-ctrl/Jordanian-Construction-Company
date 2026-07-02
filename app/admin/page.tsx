@@ -20,7 +20,7 @@ const panelItems = [
 type PanelId = (typeof panelItems)[number]['id'];
 
 export default function AdminPage() {
-  const { users, projects, records, actions, addUser, updateUser, deleteUser } = useApp();
+  const { currentUser, users, projects, records, actions, addUser, updateUser, deleteUser } = useApp();
   const [activePanel, setActivePanel] = useState<PanelId>('users');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -39,6 +39,8 @@ export default function AdminPage() {
     { label: 'Closed Actions', value: actions.filter((action) => action.status === 'Closed').length },
   ];
 
+  const isAdmin = currentUser?.role === 'ADMIN';
+
   const roleCounts = useMemo(
     () => USER_ROLES.map((role) => ({ role, count: users.filter((user) => user.role === role.value).length })),
     [users],
@@ -50,11 +52,13 @@ export default function AdminPage() {
   };
 
   const handleEditUser = (user: User) => {
+    if (!isAdmin) return;
     setSelectedUser(user);
     setFormData({ name: user.name, email: user.email, role: user.role, avatar: user.avatar || '👤' });
   };
 
   const handleDeleteUser = (user: User) => {
+    if (!isAdmin) return;
     deleteUser(user.id);
     if (selectedUser?.id === user.id) {
       resetForm();
@@ -62,6 +66,7 @@ export default function AdminPage() {
   };
 
   const handleSubmit = () => {
+    if (!isAdmin) return;
     if (!formData.name.trim() || !formData.email.trim()) return;
 
     if (selectedUser) {
@@ -89,6 +94,11 @@ export default function AdminPage() {
           <p className="text-sm font-bold text-sky-700 uppercase tracking-wide">Admin console</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Prototype configuration</h2>
           <p className="mt-2 text-sm text-slate-500">Manage mocked users, projects, categories, disciplines, statuses, and system activity.</p>
+          {!isAdmin && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+              Read-only for {currentUser?.role}. User create, edit, and delete actions are available only in the Admin role.
+            </div>
+          )}
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-6 gap-3">
             {adminMetrics.map((metric) => (
@@ -149,7 +159,8 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      disabled={!isAdmin}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:text-slate-400"
                     >
                       <Plus className="w-4 h-4" /> New
                     </button>
@@ -161,6 +172,7 @@ export default function AdminPage() {
                       <input
                         value={formData.name}
                         onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                        disabled={!isAdmin}
                         className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                         placeholder="e.g. Lina Saadeh"
                       />
@@ -170,6 +182,7 @@ export default function AdminPage() {
                       <input
                         value={formData.email}
                         onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                        disabled={!isAdmin}
                         className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                         placeholder="email@construct.jo"
                       />
@@ -179,6 +192,7 @@ export default function AdminPage() {
                       <select
                         value={formData.role}
                         onChange={(event) => setFormData((prev) => ({ ...prev, role: event.target.value as UserRole }))}
+                        disabled={!isAdmin}
                         className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                       >
                         {USER_ROLES.map((role) => (
@@ -192,7 +206,8 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={handleSubmit}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        disabled={!isAdmin}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                       >
                         {actionLabel}
                       </button>
@@ -200,7 +215,8 @@ export default function AdminPage() {
                         <button
                           type="button"
                           onClick={resetForm}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                          disabled={!isAdmin}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                         >
                           Cancel
                         </button>
@@ -236,14 +252,16 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => handleEditUser(user)}
-                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              disabled={!isAdmin}
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                             >
                               <Edit3 className="w-3.5 h-3.5" /> Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteUser(user)}
-                              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                              disabled={!isAdmin}
+                              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                             >
                               <Trash2 className="w-3.5 h-3.5" /> Delete
                             </button>

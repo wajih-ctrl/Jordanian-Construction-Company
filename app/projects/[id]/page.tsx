@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ImpactChip } from '@/components/shared/ImpactChip';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { DISCIPLINES, RECORD_CATEGORIES } from '@/lib/constants';
 import { Calendar, MapPin, Users, AlertCircle, TrendingDown, DollarSign, Shield, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,8 +14,16 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { projects, records, actions, loading } = useApp();
-  const project = projects.find((p) => p.id === projectId);
+  const normalizedProjectId = (projectId || '').toString().toLowerCase();
+  const project = projects.find((p) => {
+    const normalizedId = p.id.toLowerCase();
+    const numericId = normalizedId.replace(/^p/, '');
+    const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return normalizedProjectId === normalizedId || normalizedProjectId === numericId || normalizedProjectId === slug;
+  });
   const [activeTab, setActiveTab] = useState<'overview' | 'records' | 'actions' | 'programme' | 'cost' | 'reports' | 'settings'>('overview');
+  const [reportGenerated, setReportGenerated] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   if (loading || !projectId) {
     return (
@@ -52,7 +61,7 @@ export default function ProjectDetailPage() {
 
   return (
     <PageLayout title={project.name}>
-      <div className="p-6 space-y-6 overflow-auto">
+      <div className="min-w-0 p-4 sm:p-6 space-y-6 overflow-x-hidden">
         {/* Project Hero Header */}
         <div className="bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 rounded-2xl p-8 shadow-lg">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -466,13 +475,27 @@ export default function ProjectDetailPage() {
                       <span className="font-semibold text-emerald-800">{projectActions.filter((a) => a.status === 'Closed').length}</span>
                     </div>
                     <div className="border-t border-border pt-2 mt-2 pt-2">
-                      <button className="w-full bg-primary text-primary-foreground px-4 py-2 rounded font-semibold hover:bg-primary/90 transition-colors text-sm">
+                      <button
+                        type="button"
+                        onClick={() => setReportGenerated((value) => !value)}
+                        className="w-full bg-primary text-primary-foreground px-4 py-2 rounded font-semibold hover:bg-primary/90 transition-colors text-sm"
+                      >
                         Generate Full Report
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {reportGenerated && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                  <p className="font-bold">Project decision trail report generated</p>
+                  <p className="mt-1">
+                    Includes {projectRecords.length} records, {projectActions.length} actions, {programmeImpacts.length} programme impacts,
+                    {` ${costImpacts.length}`} cost impacts, and {claimRisks.length} claim-risk notes for review.
+                  </p>
+                </div>
+              )}
 
               <div className="bg-card border border-border rounded-lg p-6">
                 <h4 className="font-semibold text-foreground mb-4">Recent Decision Points</h4>
@@ -511,7 +534,7 @@ export default function ProjectDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-2">Enabled Categories</label>
                     <div className="space-y-2">
-                      {['Correspondence', 'Variation', 'Delay', 'Instruction', 'Claim', 'Approval'].map((cat) => (
+                      {RECORD_CATEGORIES.map((cat) => (
                         <label key={cat} className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" defaultChecked className="rounded" />
                           <span className="text-sm text-foreground">{cat}</span>
@@ -523,7 +546,7 @@ export default function ProjectDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-2">Enabled Disciplines</label>
                     <div className="space-y-2">
-                      {['Structural', 'MEP', 'Architectural', 'Civil'].map((disc) => (
+                      {DISCIPLINES.map((disc) => (
                         <label key={disc} className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" defaultChecked className="rounded" />
                           <span className="text-sm text-foreground">{disc}</span>
@@ -532,9 +555,19 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
 
-                  <button className="w-full bg-primary text-primary-foreground px-4 py-2 rounded font-semibold hover:bg-primary/90 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setSettingsSaved(true)}
+                    className="w-full bg-primary text-primary-foreground px-4 py-2 rounded font-semibold hover:bg-primary/90 transition-colors"
+                  >
                     Save Changes
                   </button>
+
+                  {settingsSaved && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">
+                      Mock project settings saved for this prototype session.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

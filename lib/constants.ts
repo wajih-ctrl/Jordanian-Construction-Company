@@ -103,27 +103,6 @@ export const IMPACT_COLORS: Record<string, string> = {
   Safety: 'bg-red-600',
 };
 
-export const ROLE_ROUTE_PERMISSIONS: Record<UserRole, string[]> = {
-  ADMIN: [
-    '/dashboard',
-    '/projects',
-    '/records',
-    '/linking',
-    '/timeline',
-    '/actions',
-    '/programme',
-    '/cost-impact',
-    '/search',
-    '/reports',
-    '/admin',
-  ],
-  PM: ['/dashboard', '/projects', '/records', '/linking', '/timeline', '/actions', '/search', '/reports'],
-  DC: ['/dashboard', '/records', '/search'],
-  PT: ['/dashboard', '/timeline', '/programme', '/search'],
-  CT: ['/dashboard', '/cost-impact', '/search', '/reports'],
-  CE: ['/dashboard', '/linking', '/search', '/reports'],
-};
-
 export const SUBCATEGORIES: Record<RecordCategory, string[]> = {
   Progress: ['Progress Report', 'Programme Update', 'Site Progress Record'],
   Variation: [
