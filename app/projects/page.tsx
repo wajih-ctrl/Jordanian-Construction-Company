@@ -3,13 +3,27 @@
 import { PageLayout } from '@/components/layout/PageLayout';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import type { Project, ProjectStatus } from '@/lib/types';
 import Link from 'next/link';
-import { ArrowRight, Building2, CalendarDays, MapPin, Search, Users } from 'lucide-react';
+import { ArrowRight, Building2, CalendarDays, Check, MapPin, Plus, Search, Users, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function ProjectsPage() {
-  const { projects, setSelectedProject } = useApp();
+  const router = useRouter();
+  const { currentUser, projects, setSelectedProject, addProject } = useApp();
   const [query, setQuery] = useState('');
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    name: '',
+    client: '',
+    location: '',
+    contractType: 'FIDIC Yellow - Lump Sum',
+    status: 'Active' as ProjectStatus,
+    startDate: '2026-07-03',
+    endDate: '2027-06-30',
+    stakeholders: '',
+  });
 
   const filteredProjects = projects.filter((project) => {
     const term = query.toLowerCase();
@@ -26,6 +40,56 @@ export default function ProjectsPage() {
     open: projects.reduce((sum, project) => sum + project.openActions, 0),
     overdue: projects.reduce((sum, project) => sum + project.overdueItems, 0),
     risk: projects.reduce((sum, project) => sum + project.claimRiskItems, 0),
+  };
+
+  const updateNewProject = (field: keyof typeof newProject, value: string) => {
+    setNewProject((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateProject = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const stakeholderNames = newProject.stakeholders
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    const createdProject: Project = {
+      id: `p-${Date.now()}`,
+      name: newProject.name.trim(),
+      client: newProject.client.trim(),
+      contractType: newProject.contractType,
+      location: newProject.location.trim(),
+      status: newProject.status,
+      startDate: new Date(newProject.startDate),
+      endDate: new Date(newProject.endDate),
+      totalRecords: 0,
+      openActions: 0,
+      overdueItems: 0,
+      costImpactRecords: 0,
+      programmeImpactRecords: 0,
+      claimRiskItems: 0,
+      lastActivity: new Date(),
+      stakeholders: (stakeholderNames.length ? stakeholderNames : [currentUser?.name || 'Project Admin']).map((name, index) => ({
+        id: `new-stakeholder-${Date.now()}-${index}`,
+        name,
+        role: index === 0 ? 'Client / Project Representative' : 'Project Stakeholder',
+      })),
+    };
+
+    addProject(createdProject);
+    setNewProjectOpen(false);
+    setNewProject({
+      name: '',
+      client: '',
+      location: '',
+      contractType: 'FIDIC Yellow - Lump Sum',
+      status: 'Active',
+      startDate: '2026-07-03',
+      endDate: '2027-06-30',
+      stakeholders: '',
+    });
+    router.push(`/projects/${createdProject.id}`);
   };
 
   return (
@@ -47,7 +111,139 @@ export default function ProjectsPage() {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
+            {currentUser?.role === 'ADMIN' && (
+              <button
+                type="button"
+                onClick={() => setNewProjectOpen((value) => !value)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800"
+              >
+                <Plus className="w-4 h-4" /> New Project
+              </button>
+            )}
           </div>
+
+          {newProjectOpen && currentUser?.role === 'ADMIN' && (
+            <form onSubmit={handleCreateProject} className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-950">Create project</p>
+                  <p className="mt-1 text-sm text-slate-600">Add a project to this prototype session, then open it and start logging records.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNewProjectOpen(false)}
+                  className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-950"
+                  aria-label="Close new project form"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Project name</span>
+                  <input
+                    required
+                    value={newProject.name}
+                    onChange={(event) => updateNewProject('name', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="e.g. Zarqa Civic Centre"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Client</span>
+                  <input
+                    required
+                    value={newProject.client}
+                    onChange={(event) => updateNewProject('client', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="Client / employer"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Location</span>
+                  <input
+                    required
+                    value={newProject.location}
+                    onChange={(event) => updateNewProject('location', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="Amman, Jordan"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Contract type</span>
+                  <select
+                    value={newProject.contractType}
+                    onChange={(event) => updateNewProject('contractType', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option>FIDIC Red - Admeasurement</option>
+                    <option>FIDIC Yellow - Lump Sum</option>
+                    <option>FIDIC Pink - Design Build</option>
+                    <option>FIDIC Green - Cost Plus</option>
+                  </select>
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Start date</span>
+                  <input
+                    required
+                    type="date"
+                    value={newProject.startDate}
+                    onChange={(event) => updateNewProject('startDate', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Target completion</span>
+                  <input
+                    required
+                    type="date"
+                    value={newProject.endDate}
+                    onChange={(event) => updateNewProject('endDate', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Status</span>
+                  <select
+                    value={newProject.status}
+                    onChange={(event) => updateNewProject('status', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option>Active</option>
+                    <option>At Risk</option>
+                    <option>Monitoring</option>
+                    <option>Closed</option>
+                  </select>
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-600">Stakeholders</span>
+                  <input
+                    value={newProject.stakeholders}
+                    onChange={(event) => updateNewProject('stakeholders', event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="Names separated by commas"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+                >
+                  <Check className="w-4 h-4" /> Create Project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewProjectOpen(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-slate-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[

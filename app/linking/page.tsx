@@ -2,10 +2,11 @@
 
 import { PageLayout } from '@/components/layout/PageLayout';
 import { useApp } from '@/context/AppContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { ImpactChip } from '@/components/shared/ImpactChip';
-import { Link as LinkIcon, Plus, X, ArrowRight, Check } from 'lucide-react';
+import { Link as LinkIcon, Plus, X, Check } from 'lucide-react';
+import Link from 'next/link';
+import { getLinkedRecordGroups } from '@/lib/record-links';
 
 type LinkType = 'variation' | 'delay' | 'instruction' | 'approval' | 'costImpact' | 'programmeImpact' | 'claimRisk' | 'siteIssue' | 'rfi' | 'ncr' | 'procurement' | 'payment';
 
@@ -24,27 +25,18 @@ const LINK_TYPES: { id: LinkType; label: string; color: string }[] = [
   { id: 'payment', label: 'Payment', color: 'bg-lime-50 text-lime-900 border-lime-200' },
 ];
 
-const MOCK_LINKED_SUBJECTS = [
-  { id: 'VAR-014', type: 'variation' as LinkType, title: 'MEP Layout Revision - Additional Ductwork', impact: 'High' },
-  { id: 'DLY-006', type: 'delay' as LinkType, title: 'Late MEP Drawing Approval', impact: 'Critical' },
-  { id: 'EI-032', type: 'instruction' as LinkType, title: "Engineer's Instruction - Revised Routing", impact: 'High' },
-  { id: 'CI-011', type: 'costImpact' as LinkType, title: 'Additional Ductwork Labour Cost', impact: 'Medium' },
-  { id: 'PRG-007', type: 'programmeImpact' as LinkType, title: 'Programme Update Rev. 07 - 7 Day Delay', impact: 'High' },
-  { id: 'CR-008', type: 'claimRisk' as LinkType, title: 'Medium Claim Risk - Variation Scope', impact: 'Medium' },
-  { id: 'AP-004', type: 'approval' as LinkType, title: 'Approval Pending - Consultant Review', impact: 'Medium' },
-];
-
 interface SelectedLink {
   id: string;
   type: LinkType;
   title: string;
   impact: string;
+  recordId?: string;
 }
 
 export default function LinkingPage() {
   const { records, selectedProject } = useApp();
   const [selectedRecordId, setSelectedRecordId] = useState<string>(records.find(r => r.projectId === selectedProject?.id)?.id || '');
-  const [selectedLinks, setSelectedLinks] = useState<SelectedLink[]>([...MOCK_LINKED_SUBJECTS]);
+  const [selectedLinks, setSelectedLinks] = useState<SelectedLink[]>([]);
   const [newLinkType, setNewLinkType] = useState<LinkType>('variation');
   const [showAddForm, setShowAddForm] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -52,13 +44,41 @@ export default function LinkingPage() {
   const projectRecords = records.filter((r) => r.projectId === selectedProject?.id);
   const selectedRecord = projectRecords.find((r) => r.id === selectedRecordId);
 
+  useEffect(() => {
+    if (!selectedRecord) return;
+    const groupToType: Record<string, LinkType> = {
+      linkedVariations: 'variation',
+      linkedDelays: 'delay',
+      linkedInstructions: 'instruction',
+      linkedApprovals: 'approval',
+      linkedCostImpacts: 'costImpact',
+      linkedProgrammeImpacts: 'programmeImpact',
+      linkedClaimRisks: 'claimRisk',
+      linkedSiteIssues: 'siteIssue',
+      linkedRFIs: 'rfi',
+      linkedNCRs: 'ncr',
+      linkedProcurements: 'procurement',
+      linkedPayments: 'payment',
+    };
+    setSelectedLinks(
+      getLinkedRecordGroups(selectedRecord, records).flatMap((group) =>
+        group.records.map((record) => ({
+          id: record.reference,
+          recordId: record.id,
+          type: groupToType[group.key] || 'variation',
+          title: record.title,
+          impact: record.priority,
+        })),
+      ),
+    );
+  }, [records, selectedRecord]);
+
   const handleAddLink = () => {
     if (newLinkType) {
-      const mockReference = `${newLinkType.toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
       const newLink: SelectedLink = {
-        id: mockReference,
+        id: `DRAFT-${String(selectedLinks.length + 1).padStart(2, '0')}`,
         type: newLinkType,
-        title: `New ${LINK_TYPES.find(l => l.id === newLinkType)?.label} Link`,
+        title: `Draft ${LINK_TYPES.find(l => l.id === newLinkType)?.label} link for review`,
         impact: 'Medium',
       };
       setSelectedLinks([...selectedLinks, newLink]);
@@ -196,8 +216,9 @@ export default function LinkingPage() {
                   {selectedLinks.map((link) => {
                     const linkTypeInfo = LINK_TYPES.find((lt) => lt.id === link.type);
                     return (
-                      <div
+                      <Link
                         key={link.id}
+                        href={link.recordId ? `/records/${link.recordId}` : '#'}
                         className={`p-4 rounded-xl border shadow-sm hover:border-slate-400 transition-colors ${linkTypeInfo?.color}`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
@@ -206,7 +227,11 @@ export default function LinkingPage() {
                             <p className="text-xs opacity-80 mt-1 truncate">{link.title}</p>
                           </div>
                           <button
-                            onClick={() => handleRemoveLink(link.id)}
+                            type="button"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleRemoveLink(link.id);
+                            }}
                             className="flex-shrink-0 p-1 hover:bg-white/80 rounded transition-colors"
                             title="Remove link"
                           >
@@ -221,7 +246,7 @@ export default function LinkingPage() {
                             {link.impact}
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -273,12 +298,15 @@ export default function LinkingPage() {
                   {selectedLinks.map((link) => {
                     const linkTypeInfo = LINK_TYPES.find((lt) => lt.id === link.type);
                     return (
-                      <div key={link.id} className="text-center">
-                        <div className={`${linkTypeInfo?.color} rounded px-2 py-1 inline-block`}>
-                          <p className="font-semibold text-xs">{link.id}</p>
-                          <p className="text-xs opacity-80">{linkTypeInfo?.label}</p>
-                        </div>
-                      </div>
+                      <Link
+                        key={link.id}
+                        href={link.recordId ? `/records/${link.recordId}` : '#'}
+                        className={`${linkTypeInfo?.color} rounded-lg border px-3 py-2 text-left hover:border-slate-500`}
+                      >
+                        <p className="font-semibold text-xs">{link.id}</p>
+                        <p className="text-xs opacity-80">{linkTypeInfo?.label}</p>
+                        <p className="mt-1 text-[11px] font-semibold line-clamp-2">{link.title}</p>
+                      </Link>
                     );
                   })}
                 </div>

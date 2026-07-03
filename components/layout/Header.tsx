@@ -25,7 +25,7 @@ export function Header({ title, breadcrumbs }: HeaderProps) {
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <Link href="/search" className="hidden lg:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 hover:bg-white hover:text-slate-900">
             <Search className="w-4 h-4" />
-            Search records
+            Global search
           </Link>
           <div className="relative">
           <button

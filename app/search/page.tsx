@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ImpactChip } from '@/components/shared/ImpactChip';
 import Link from 'next/link';
-import { RECORD_CATEGORIES, DISCIPLINES, PRIORITIES, SUBCATEGORIES } from '@/lib/constants';
+import { ACTION_STATUSES, RECORD_CATEGORIES, DISCIPLINES, PRIORITIES, SUBCATEGORIES } from '@/lib/constants';
 
 export default function SearchPage() {
   const { records, projects, selectedProject } = useApp();
@@ -78,6 +78,27 @@ export default function SearchPage() {
   const subcategoryOptions = filterCategory
     ? SUBCATEGORIES[filterCategory as keyof typeof SUBCATEGORIES]
     : Array.from(new Set(Object.values(SUBCATEGORIES).flat()));
+  const responsibleOptions = Array.from(new Set(records.map((record) => record.responsibleParty).filter(Boolean))).sort();
+  const senderOptions = Array.from(new Set(records.map((record) => record.sender).filter(Boolean))).sort();
+  const activeFilterCount = [
+    filterProject,
+    filterCategory,
+    filterSubcategory,
+    filterDiscipline,
+    filterStatus,
+    filterPriority,
+    filterResponsibility,
+    filterProgrammeImpact,
+    filterCostImpact,
+    filterClaimRisk,
+    filterOverdueOnly,
+    filterSender,
+    filterDateFrom,
+    filterDateTo,
+    filterResponseDueFrom,
+    filterResponseDueTo,
+    filterActionStatus,
+  ].filter(Boolean).length;
 
   const clearFilters = () => {
     setFilterProject(selectedProject?.id || '');
@@ -126,7 +147,7 @@ export default function SearchPage() {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="flex items-center gap-2 bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/50 text-foreground px-5 py-3 rounded-lg hover:border-primary animation-subtle text-sm font-bold uppercase tracking-wide shadow-md"
         >
-          <Filter className="w-4 h-4" /> Advanced Filters {hasActiveFilters && `(${Object.values({filterProject, filterCategory, filterSubcategory, filterDiscipline, filterStatus, filterPriority, filterResponsibility, filterProgrammeImpact, filterCostImpact, filterClaimRisk, filterOverdueOnly, filterSender}).filter(v => v).length})`}
+          <Filter className="w-4 h-4" /> Advanced Filters {hasActiveFilters && `(${activeFilterCount})`}
         </button>
 
         {/* Advanced Filters - Premium */}
@@ -234,6 +255,18 @@ export default function SearchPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Cost Impact</label>
+                  <select
+                    value={filterCostImpact}
+                    onChange={(e) => setFilterCostImpact(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  >
+                    <option value="">Any Cost Impact</option>
+                    <option value="yes">Has Cost Impact</option>
+                    <option value="no">No Cost Impact</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Claim Risk</label>
                   <select
                     value={filterClaimRisk}
@@ -245,58 +278,90 @@ export default function SearchPage() {
                     <option value="no">No Claim Risk</option>
                   </select>
                 </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">Date From</label>
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">Date To</label>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">Action Status</label>
-                <select
-                  value={filterActionStatus}
-                  onChange={(e) => setFilterActionStatus(e.target.value)}
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Any Status</option>
-                  <option value="Open">Open</option>
-                  <option value="Pending Review">Pending Review</option>
-                  <option value="Waiting for Response">Waiting</option>
-                  <option value="Overdue">Overdue</option>
-                  <option value="Closed">Closed</option>
-                  <option value="Escalated">Escalated</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">Response Due From</label>
-                <input
-                  type="date"
-                  value={filterResponseDueFrom}
-                  onChange={(e) => setFilterResponseDueFrom(e.target.value)}
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">Response Due To</label>
-                <input
-                  type="date"
-                  value={filterResponseDueTo}
-                  onChange={(e) => setFilterResponseDueTo(e.target.value)}
-                  className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Responsible Party</label>
+                  <select
+                    value={filterResponsibility}
+                    onChange={(e) => setFilterResponsibility(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  >
+                    <option value="">Any Responsible Party</option>
+                    {responsibleOptions.map((person) => (
+                      <option key={person} value={person}>{person}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Sender</label>
+                  <select
+                    value={filterSender}
+                    onChange={(e) => setFilterSender(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  >
+                    <option value="">Any Sender</option>
+                    {senderOptions.map((sender) => (
+                      <option key={sender} value={sender}>{sender}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Action Status</label>
+                  <select
+                    value={filterActionStatus}
+                    onChange={(e) => setFilterActionStatus(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  >
+                    <option value="">Any Action Status</option>
+                    {ACTION_STATUSES.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+                <label className="flex items-center gap-3 rounded-lg border border-border/50 bg-background px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={filterOverdueOnly}
+                    onChange={(e) => setFilterOverdueOnly(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-bold text-foreground">Overdue only</span>
+                </label>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Date From</label>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Date To</label>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Response Due From</label>
+                  <input
+                    type="date"
+                    value={filterResponseDueFrom}
+                    onChange={(e) => setFilterResponseDueFrom(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-3 uppercase tracking-wide">Response Due To</label>
+                  <input
+                    type="date"
+                    value={filterResponseDueTo}
+                    onChange={(e) => setFilterResponseDueTo(e.target.value)}
+                    className="w-full bg-background border border-border/50 rounded-lg px-4 py-3 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 animation-subtle font-medium"
+                  />
+                </div>
             </div>
 
               <div className="flex gap-3 pt-2 border-t border-border/50">

@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ACTION_STATUSES, DISCIPLINES, PRIORITIES, RECORD_CATEGORIES, SUBCATEGORIES, USER_ROLES } from '@/lib/constants';
 import { Activity, Folder, Layers3, Shield, SlidersHorizontal, Users, Edit3, Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import type { User, UserRole } from '@/lib/types';
 import type React from 'react';
 import { useMemo, useState } from 'react';
@@ -34,8 +35,11 @@ export default function AdminPage() {
     { label: 'Total Projects', value: projects.length },
     { label: 'Total Records', value: records.length },
     { label: 'Open Actions', value: actions.filter((action) => action.status !== 'Closed').length },
+    { label: 'Overdue Actions', value: actions.filter((action) => action.status === 'Overdue' || action.status === 'Escalated').length },
+    { label: 'Cost Impact', value: records.filter((record) => record.hasCostImpact).length },
+    { label: 'Programme Impact', value: records.filter((record) => record.hasProgrammeImpact).length },
     { label: 'Claim-Risk Records', value: records.filter((record) => record.hasClaimRisk).length },
-    { label: 'Pending Approvals', value: records.filter((record) => record.status === 'In Review').length },
+    { label: 'Pending Approvals', value: records.filter((record) => record.mainCategory === 'Approval' || record.status === 'In Review').length },
     { label: 'Closed Actions', value: actions.filter((action) => action.status === 'Closed').length },
   ];
 
@@ -100,7 +104,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {adminMetrics.map((metric) => (
               <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{metric.label}</p>
@@ -278,7 +282,18 @@ export default function AdminPage() {
 
         {activePanel === 'projects' && (
           <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <PanelHeader icon={<Folder className="w-5 h-5 text-emerald-700" />} title="Projects" />
+            <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Folder className="w-5 h-5 text-emerald-700" />
+                <h3 className="font-bold text-slate-950">Projects</h3>
+              </div>
+              <Link
+                href="/projects"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+              >
+                <Plus className="w-4 h-4" /> Add / Manage Projects
+              </Link>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px]">
                 <thead>

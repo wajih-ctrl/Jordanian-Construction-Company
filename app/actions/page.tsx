@@ -21,6 +21,14 @@ export default function ActionsPage() {
   }
 
   const projectActions = actions.filter((a) => a.projectId === selectedProject.id);
+  const getDueIndicator = (action: typeof projectActions[number]) => {
+    if (action.status === 'Closed') return { label: 'Closed', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+    if (action.status === 'Overdue' || action.status === 'Escalated') return { label: 'Overdue', className: 'bg-rose-50 text-rose-800 border-rose-200' };
+    const days = Math.ceil((action.dueDate.getTime() - new Date('2026-07-03').getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) return { label: 'Past due', className: 'bg-rose-50 text-rose-800 border-rose-200' };
+    if (days <= 2) return { label: 'Due soon', className: 'bg-amber-50 text-amber-800 border-amber-200' };
+    return { label: `Due in ${days}d`, className: 'bg-slate-50 text-slate-700 border-slate-200' };
+  };
 
   // Kanban columns
   const kanbanColumns = [
@@ -79,8 +87,10 @@ export default function ActionsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {projectActions.map((action) => (
-                      <tr key={action.id} className="hover:bg-secondary/50 transition-colors">
+                    {projectActions.map((action) => {
+                      const due = getDueIndicator(action);
+                      return (
+                      <tr key={action.id} className={action.status === 'Closed' ? 'bg-slate-50/70 text-slate-500' : 'hover:bg-secondary/50 transition-colors'}>
                         <td className="px-4 py-3 text-sm text-foreground font-medium truncate max-w-xs">
                           {action.title}
                         </td>
@@ -93,6 +103,7 @@ export default function ActionsPage() {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {action.dueDate.toLocaleDateString()}
+                          <span className={`ml-2 inline-flex rounded-full border px-2 py-0.5 font-bold ${due.className}`}>{due.label}</span>
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={action.status} />
@@ -106,7 +117,7 @@ export default function ActionsPage() {
                           </Link>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
@@ -135,11 +146,13 @@ export default function ActionsPage() {
                     {columnActions.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-4">No items</p>
                     ) : (
-                      columnActions.map((action) => (
+                      columnActions.map((action) => {
+                        const due = getDueIndicator(action);
+                        return (
                         <Link
                           key={action.id}
                           href={`/records/${action.recordId}`}
-                          className={`${column.color} border border-border rounded-lg p-3 hover:border-primary transition-colors block`}
+                          className={`${column.color} border border-border rounded-lg p-3 hover:border-primary transition-colors block ${action.status === 'Closed' ? 'opacity-70' : ''}`}
                         >
                           <p className="text-xs font-semibold text-foreground mb-1 line-clamp-2">{action.title}</p>
                           <p className="text-xs text-muted-foreground mb-2">{action.responsiblePerson}</p>
@@ -147,8 +160,9 @@ export default function ActionsPage() {
                             <ImpactChip type={action.impactType as any} />
                             <StatusBadge status={action.priority} type="priority" />
                           </div>
+                          <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${due.className}`}>{due.label}</span>
                         </Link>
-                      ))
+                      )})
                     )}
                   </div>
                 </div>

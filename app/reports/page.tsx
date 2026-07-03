@@ -6,6 +6,7 @@ import { BarChart3, Download, Calendar, Filter } from 'lucide-react';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import Link from 'next/link';
+import { getLinkedRecordCount, getLinkedRecordGroups } from '@/lib/record-links';
 
 export default function ReportsPage() {
   const { selectedProject, records } = useApp();
@@ -36,7 +37,7 @@ export default function ReportsPage() {
 
   // Decision trail
   const decisionTrail = projectRecords
-    .filter((r) => r.status === 'Closed' || (r.linkedVariations.length > 0 && r.status !== 'Draft'))
+    .filter((r) => r.status === 'Closed' || (getLinkedRecordCount(r) > 0 && r.status !== 'Draft'))
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
   return (
@@ -123,7 +124,9 @@ export default function ReportsPage() {
             <div className="p-8 text-center text-muted-foreground">No decision trail records yet</div>
           ) : (
             <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
-              {decisionTrail.map((record, index) => (
+              {decisionTrail.map((record, index) => {
+                const groups = getLinkedRecordGroups(record, records);
+                return (
                 <Link
                   key={record.id}
                   href={`/records/${record.id}`}
@@ -138,23 +141,21 @@ export default function ReportsPage() {
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{record.description}</p>
                     <div className="flex items-center gap-2 mb-1">
                       <StatusBadge status={record.status} />
-                      {record.linkedVariations.length > 0 && (
-                          <span className="text-xs bg-violet-50 text-violet-800 border border-violet-200 px-2 py-1 rounded">
-                          Var: {record.linkedVariations.length}
+                      <span className="text-xs bg-slate-50 text-slate-800 border border-slate-200 px-2 py-1 rounded">
+                        Links: {getLinkedRecordCount(record)}
+                      </span>
+                      {groups.slice(0, 3).map((group) => (
+                        <span key={group.key} className="text-xs bg-sky-50 text-sky-800 border border-sky-200 px-2 py-1 rounded">
+                          {group.label}: {group.records.length}
                         </span>
-                      )}
-                      {record.linkedCostImpacts.length > 0 && (
-                          <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-1 rounded">
-                          Cost: {record.linkedCostImpacts.length}
-                        </span>
-                      )}
+                      ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Updated: {record.updatedAt.toLocaleDateString()} - Created: {record.createdBy}
                     </p>
                   </div>
                 </Link>
-              ))}
+              )})}
             </div>
           )}
         </div>

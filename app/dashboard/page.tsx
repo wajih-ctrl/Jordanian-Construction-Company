@@ -284,6 +284,29 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <section className="rounded-xl border border-border/70 bg-card p-5 shadow-sm">
+          <h3 className="font-bold text-foreground mb-4">End-to-End Decision Trail Flow</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+            {[
+              { label: '1. Select Project', href: '/projects', enabled: true },
+              { label: '2. Log Record', href: '/records/new', enabled: currentUser.role === 'DC' || currentUser.role === 'ADMIN' },
+              { label: '3. Link Subjects', href: '/linking', enabled: canOpen('/linking') },
+              { label: '4. Track Actions', href: '/actions', enabled: canOpen('/actions') },
+              { label: '5. Export Report', href: '/reports', enabled: true },
+            ].map((step) => (
+              step.enabled ? (
+                <Link key={step.label} href={step.href} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 hover:border-slate-400 hover:bg-white">
+                  {step.label}
+                </Link>
+              ) : (
+                <div key={step.label} className="rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-400">
+                  {step.label}
+                </div>
+              )
+            ))}
+          </div>
+        </section>
+
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden">
             <div className="p-5 border-b border-border/60 flex items-center justify-between">

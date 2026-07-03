@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { FilePlus2, Filter, Search } from 'lucide-react';
 import { useState } from 'react';
 import { DISCIPLINES, RECORD_CATEGORIES, RECORD_STATUSES } from '@/lib/constants';
+import { getLinkedRecordCount } from '@/lib/record-links';
 
 export default function RecordsPage() {
   const { currentUser, selectedProject, records } = useApp();
@@ -56,7 +57,7 @@ export default function RecordsPage() {
             </div>
             {canAddRecord && (
               <Link href="/records/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-                <FilePlus2 className="w-4 h-4" /> Add Record
+                <FilePlus2 className="w-4 h-4" /> New Record
               </Link>
             )}
           </div>
@@ -111,7 +112,7 @@ export default function RecordsPage() {
             <div className="p-10 text-center text-sm text-slate-500">No records found</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px]">
+              <table className="w-full min-w-[1040px]">
                 <thead>
                   <tr>
                     <th className="px-5 py-4 text-left text-xs font-bold">Reference</th>
@@ -121,6 +122,7 @@ export default function RecordsPage() {
                     <th className="px-5 py-4 text-left text-xs font-bold">Priority</th>
                     <th className="px-5 py-4 text-left text-xs font-bold">Status</th>
                     <th className="px-5 py-4 text-left text-xs font-bold">Impacts</th>
+                    <th className="px-5 py-4 text-left text-xs font-bold">Links</th>
                     <th className="px-5 py-4 text-left text-xs font-bold">Action</th>
                   </tr>
                 </thead>
@@ -143,6 +145,7 @@ export default function RecordsPage() {
                           {record.hasClaimRisk && <ImpactChip type="Claim" />}
                         </div>
                       </td>
+                      <td className="px-5 py-4 text-xs font-bold text-slate-700">{getLinkedRecordCount(record)}</td>
                       <td className="px-5 py-4">
                         <Link href={`/records/${record.id}`} className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-slate-400">
                           View

@@ -11,6 +11,30 @@ import {
   generateMockCostImpacts,
 } from '@/lib/mock-data';
 
+const reviveRecord = (record: Record): Record => ({
+  ...record,
+  dateReceived: new Date(record.dateReceived),
+  eventDate: record.eventDate ? new Date(record.eventDate) : undefined,
+  instructionDate: record.instructionDate ? new Date(record.instructionDate) : undefined,
+  responseDueDate: record.responseDueDate ? new Date(record.responseDueDate) : undefined,
+  closureDate: record.closureDate ? new Date(record.closureDate) : undefined,
+  actionDueDate: record.actionDueDate ? new Date(record.actionDueDate) : undefined,
+  createdAt: new Date(record.createdAt),
+  updatedAt: new Date(record.updatedAt),
+  attachments: record.attachments.map((attachment) => ({
+    ...attachment,
+    uploadedAt: new Date(attachment.uploadedAt),
+  })),
+  comments: record.comments.map((comment) => ({
+    ...comment,
+    createdAt: new Date(comment.createdAt),
+  })),
+  actionHistory: record.actionHistory.map((history) => ({
+    ...history,
+    timestamp: new Date(history.timestamp),
+  })),
+});
+
 interface AppContextType {
   // Auth
   currentUser: User | null;
@@ -28,6 +52,9 @@ interface AppContextType {
   // Selected Project
   selectedProject: Project | null;
   setSelectedProject: (project: Project | null) => void;
+
+  // Project Mutations
+  addProject: (project: Project) => void;
 
   // User Mutations
   addUser: (user: User) => void;
@@ -59,9 +86,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedUsersJson = typeof window !== 'undefined' ? window.localStorage.getItem('jordanianCompanyUsers') : null;
+    const savedProjectsJson = typeof window !== 'undefined' ? window.localStorage.getItem('jordanianCompanyProjects') : null;
+    const savedRecordsJson = typeof window !== 'undefined' ? window.localStorage.getItem('jordanianCompanyRecords') : null;
     const mockUsers = savedUsersJson ? (JSON.parse(savedUsersJson) as User[]) : generateMockUsers();
-    const mockProjects = generateMockProjects();
-    const mockRecords = generateMockRecords();
+    const mockProjects = savedProjectsJson
+      ? (JSON.parse(savedProjectsJson) as Project[]).map((project) => ({
+          ...project,
+          startDate: new Date(project.startDate),
+          endDate: new Date(project.endDate),
+          lastActivity: new Date(project.lastActivity),
+        }))
+      : generateMockProjects();
+    const mockRecords = savedRecordsJson ? (JSON.parse(savedRecordsJson) as Record[]).map(reviveRecord) : generateMockRecords();
     const mockActions = generateMockActions(mockRecords);
     const mockProgrammeImpacts = generateMockProgrammeImpacts(mockRecords);
     const mockCostImpacts = generateMockCostImpacts(mockRecords);
@@ -85,6 +121,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const persistUsers = (nextUsers: User[]) => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('jordanianCompanyUsers', JSON.stringify(nextUsers));
+  };
+
+  const persistProjects = (nextProjects: Project[]) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('jordanianCompanyProjects', JSON.stringify(nextProjects));
+  };
+
+  const persistRecords = (nextRecords: Record[]) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('jordanianCompanyRecords', JSON.stringify(nextRecords));
   };
 
   const addUser = (user: User) => {
@@ -131,6 +177,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addProject = (project: Project) => {
+    setProjects((prev) => {
+      const next = [...prev, project];
+      persistProjects(next);
+      return next;
+    });
+    handleSetSelectedProject(project);
+  };
+
   const logout = () => {
     handleSetCurrentUser(null);
     if (typeof window !== 'undefined') {
@@ -139,15 +194,49 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateRecord = (updatedRecord: Record) => {
-    setRecords((prev) => prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)));
+    setRecords((prev) => {
+      const next = prev.map((r) => (r.id === updatedRecord.id ? updatedRecord : r));
+      persistRecords(next);
+      return next;
+    });
   };
 
   const addRecord = (newRecord: Record) => {
-    setRecords((prev) => [...prev, newRecord]);
+    setRecords((prev) => {
+      const next = [...prev, newRecord];
+      persistRecords(next);
+      setActions(generateMockActions(next));
+      setProgrammeImpacts(generateMockProgrammeImpacts(next));
+      setCostImpacts(generateMockCostImpacts(next));
+      return next;
+    });
+    setProjects((prev) => {
+      const next = prev.map((project) =>
+        project.id === newRecord.projectId
+          ? {
+              ...project,
+              totalRecords: project.totalRecords + 1,
+              costImpactRecords: project.costImpactRecords + (newRecord.hasCostImpact ? 1 : 0),
+              programmeImpactRecords: project.programmeImpactRecords + (newRecord.hasProgrammeImpact ? 1 : 0),
+              claimRiskItems: project.claimRiskItems + (newRecord.hasClaimRisk ? 1 : 0),
+              lastActivity: new Date(),
+            }
+          : project
+      );
+      persistProjects(next);
+      return next;
+    });
   };
 
   const deleteRecord = (id: string) => {
-    setRecords((prev) => prev.filter((r) => r.id !== id));
+    setRecords((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      persistRecords(next);
+      setActions(generateMockActions(next));
+      setProgrammeImpacts(generateMockProgrammeImpacts(next));
+      setCostImpacts(generateMockCostImpacts(next));
+      return next;
+    });
   };
 
   const getRecordById = (id: string) => {
@@ -175,6 +264,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     costImpacts,
     selectedProject,
     setSelectedProject: handleSetSelectedProject,
+    addProject,
     addUser,
     updateUser,
     deleteUser,

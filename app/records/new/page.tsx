@@ -61,10 +61,22 @@ export default function NewRecordPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date();
+    const safeCategory = formData.mainCategory.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const attachmentName =
+      formData.mainCategory === 'RFI/Submittal'
+        ? 'RFI Response and Marked-Up Drawing.pdf'
+        : formData.mainCategory === 'Variation'
+          ? 'Variation Quotation Breakdown.xlsx'
+          : formData.mainCategory === 'Delay' || formData.mainCategory === 'Programme Impact'
+            ? 'Programme Impact Notice and Fragnet.pdf'
+            : formData.mainCategory === 'Payment'
+              ? 'Interim Payment Certificate.pdf'
+              : `${formData.mainCategory} Supporting Record.pdf`;
 
     const newRecord: Record = {
-      id: `rec-${Date.now()}`,
-      reference: `CORR-${new Date().getFullYear()}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`,
+      id: `rec-${now.getTime()}`,
+      reference: `CORR-${now.getFullYear()}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`,
       title: formData.title,
       projectId: selectedProject.id,
       sender: formData.sender,
@@ -106,9 +118,18 @@ export default function NewRecordPage() {
       actionStatus: formData.requiredAction ? 'Open' : undefined,
       nextStep: '',
       createdBy: users[0]?.name || 'System',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      attachments: [],
+      createdAt: now,
+      updatedAt: now,
+      attachments: [
+        {
+          id: `att-${safeCategory}-${now.getTime()}`,
+          name: attachmentName,
+          size: 420000,
+          type: attachmentName.endsWith('.xlsx') ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf',
+          uploadedAt: now,
+          uploadedBy: users[0]?.name || 'Document Controller',
+        },
+      ],
       comments: [],
       actionHistory: [],
     };

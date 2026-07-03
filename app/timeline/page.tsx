@@ -22,84 +22,85 @@ interface TimelineEvent {
 const MOCK_TIMELINE: TimelineEvent[] = [
   {
     id: 't1',
-    date: new Date('2024-10-15'),
+    date: new Date('2026-05-10'),
     title: 'Site Issue Raised',
     description: 'Level 3 ceiling works blocked due to unresolved ductwork routing conflict. MEP contractor unable to proceed without revised drawings.',
     type: 'issue',
-    recordRef: 'SI-004',
+    recordRef: 'CORR-2026-001',
     recordId: 'rec-0001',
     impactLevel: 'Critical',
-    linkedItems: ['EI-015', 'DLY-003'],
+    linkedItems: ['EI-2026-015', 'DLY-2026-003'],
   },
   {
     id: 't2',
-    date: new Date('2024-10-16'),
+    date: new Date('2026-05-11'),
     title: 'Engineer Instruction Issued',
-    description: 'Revised MEP drawing issued by structural engineer. Instruction EI-015 issued to MEP contractor with 48-hour turnaround required.',
+    description: 'Revised MEP routing instruction issued to the contractor with 48-hour turnaround required for updated shop drawings.',
     type: 'instruction',
-    recordRef: 'EI-015',
+    recordRef: 'EI-2026-015',
     recordId: 'rec-0002',
     impactLevel: 'High',
-    linkedItems: ['SI-004', 'PRG-007'],
+    linkedItems: ['CORR-2026-001', 'DLY-2026-003'],
   },
   {
     id: 't3',
-    date: new Date('2024-10-17'),
+    date: new Date('2026-05-12'),
     title: 'Programme Impact Identified',
     description: 'Planner flagged 7-day potential delay. Revised drawing review and MEP rework time identified as critical path activity. Escalated to project controls.',
     type: 'impact',
-    recordRef: 'PRG-007',
+    recordRef: 'DLY-2026-003',
     recordId: 'rec-0003',
     impactLevel: 'High',
-    linkedItems: ['EI-015', 'VAR-014'],
+    linkedItems: ['EI-2026-015', 'VAR-2026-014'],
   },
   {
     id: 't4',
-    date: new Date('2024-10-18'),
+    date: new Date('2026-05-14'),
     title: 'Cost Impact Submitted',
-    description: 'QS prepared variation VAR-014 for additional ductwork ($85,500) and labour ($42,300). Total impact: $127,800 JOD equivalent. Awaiting consultant approval.',
+    description: 'QS prepared cost impact for additional ductwork offsets, supports, supervision, and disruption allowance. Consultant approval remains pending.',
     type: 'cost',
-    recordRef: 'VAR-014',
-    recordId: 'rec-0004',
+    recordRef: 'CI-2026-011',
+    recordId: 'rec-0005',
     impactLevel: 'High',
-    linkedItems: ['CI-011', 'AP-004'],
+    linkedItems: ['VAR-2026-014', 'AP-2026-004'],
   },
   {
     id: 't5',
-    date: new Date('2024-10-20'),
+    date: new Date('2026-05-15'),
     title: 'Approval Pending',
     description: 'Consultant review of variation pending. Approval due within 5 working days per FIDIC conditions. Response status: Awaiting consultant sign-off.',
     type: 'approval',
-    recordRef: 'AP-004',
-    recordId: 'rec-0005',
+    recordRef: 'AP-2026-004',
+    recordId: 'rec-0006',
     impactLevel: 'Medium',
-    linkedItems: ['VAR-014', 'CR-008'],
+    linkedItems: ['VAR-2026-014', 'CR-2026-008'],
   },
   {
     id: 't6',
-    date: new Date('2024-10-25'),
+    date: new Date('2026-05-21'),
     title: 'Response Overdue',
     description: 'Consultant response exceeded 5 working day SLA by 2 days. Escalation initiated. Additional commercial risk identified due to delayed approval.',
     type: 'overdue',
-    recordRef: 'AP-004',
-    recordId: 'rec-0005',
+    recordRef: 'AP-2026-004',
+    recordId: 'rec-0006',
     impactLevel: 'Critical',
-    linkedItems: ['CR-008'],
+    linkedItems: ['CR-2026-008'],
   },
   {
     id: 't7',
-    date: new Date('2024-10-26'),
+    date: new Date('2026-05-24'),
     title: 'Action Closed',
-    description: 'Engineer approval received and incorporated. Revised works instructed. MEP works resumed on Level 3. Decision trail complete.',
+    description: 'Revised MEP routing approval issued with linked variation and programme notes retained for the decision trail package.',
     type: 'closed',
-    recordRef: 'EI-015',
-    recordId: 'rec-0002',
+    recordRef: 'AP-2026-004',
+    recordId: 'rec-0006',
     impactLevel: 'Low',
-    linkedItems: ['SI-004'],
+    linkedItems: ['CORR-2026-001', 'EI-2026-015'],
   },
 ];
 
 export default function TimelinePage() {
+  const { records } = useApp();
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set([MOCK_TIMELINE[0].id]));
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
@@ -295,12 +296,13 @@ export default function TimelinePage() {
                         <p className="text-xs font-semibold text-muted-foreground mb-2">Linked Records</p>
                         <div className="flex flex-wrap gap-2">
                           {event.linkedItems.map((item) => (
-                            <div
+                            <Link
                               key={item}
+                              href={`/records/${records.find((record) => record.reference === item)?.id || event.recordId}`}
                               className="bg-primary/20 text-primary px-2 py-1 rounded text-xs font-semibold hover:bg-primary/30 transition-colors cursor-pointer"
                             >
                               {item}
-                            </div>
+                            </Link>
                           ))}
                         </div>
                       </div>

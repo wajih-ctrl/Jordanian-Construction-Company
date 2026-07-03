@@ -9,12 +9,13 @@ import { Calendar, Link as LinkIcon, AlertTriangle, Users, MessageSquare, Edit, 
 import Link from 'next/link';
 import { useState } from 'react';
 import { RECORD_STATUSES, ACTION_STATUSES } from '@/lib/constants';
+import { getLinkedRecordCount, getLinkedRecordGroups } from '@/lib/record-links';
 
 export default function RecordDetailPage() {
   const params = useParams();
   const router = useRouter();
   const recordId = params.id as string;
-  const { getRecordById, deleteRecord, updateRecord, currentUser, loading } = useApp();
+  const { getRecordById, deleteRecord, updateRecord, currentUser, loading, records } = useApp();
   const [editOpen, setEditOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
@@ -69,15 +70,8 @@ export default function RecordDetailPage() {
     setCommentText('');
   };
 
-  // Count total links
-  const totalLinks =
-    record.linkedVariations.length +
-    record.linkedDelays.length +
-    record.linkedInstructions.length +
-    record.linkedApprovals.length +
-    record.linkedCostImpacts.length +
-    record.linkedProgrammeImpacts.length +
-    record.linkedClaimRisks.length;
+  const totalLinks = getLinkedRecordCount(record);
+  const linkedGroups = getLinkedRecordGroups(record, records);
 
   return (
     <PageLayout
@@ -203,54 +197,23 @@ export default function RecordDetailPage() {
               <h3 className="font-bold text-foreground text-lg">Linked Records ({totalLinks})</h3>
             </div>
             <div className="p-6 space-y-3">
-              {record.linkedVariations.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Variations</p>
-                  <div className="flex flex-wrap gap-2">
-                    {record.linkedVariations.map((id) => (
-                      <span key={id} className="bg-violet-50 text-violet-800 border border-violet-200 text-xs px-2 py-1 rounded">
-                        {id}
-                      </span>
+              {linkedGroups.map((group) => (
+                <div key={group.key}>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">{group.label}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {group.records.map((linkedRecord) => (
+                      <Link
+                        key={`${group.key}-${linkedRecord.id}`}
+                        href={`/records/${linkedRecord.id}`}
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs hover:border-slate-400 hover:bg-white"
+                      >
+                        <p className="font-mono font-bold text-slate-700">{linkedRecord.reference}</p>
+                        <p className="mt-1 font-semibold text-slate-950">{linkedRecord.title}</p>
+                      </Link>
                     ))}
                   </div>
                 </div>
-              )}
-              {record.linkedDelays.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Delays</p>
-                  <div className="flex flex-wrap gap-2">
-                    {record.linkedDelays.map((id) => (
-                      <span key={id} className="bg-orange-50 text-orange-800 border border-orange-200 text-xs px-2 py-1 rounded">
-                        {id}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {record.linkedCostImpacts.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Cost Impacts</p>
-                  <div className="flex flex-wrap gap-2">
-                    {record.linkedCostImpacts.map((id) => (
-                      <span key={id} className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs px-2 py-1 rounded">
-                        {id}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {record.linkedClaimRisks.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Claim Risks</p>
-                  <div className="flex flex-wrap gap-2">
-                    {record.linkedClaimRisks.map((id) => (
-                      <span key={id} className="bg-red-50 text-red-800 border border-red-200 text-xs px-2 py-1 rounded">
-                        {id}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
@@ -329,13 +292,18 @@ export default function RecordDetailPage() {
           <div className="bg-card border border-border rounded-lg p-6">
             <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
               <Paperclip className="w-5 h-5" />
-              Attachment Placeholder
+              Mock Attachments
             </h3>
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
-              <p className="text-sm font-bold text-slate-950">No real document storage in prototype</p>
-              <p className="mt-1 text-sm text-slate-500">
-                This slot represents incoming letters, drawings, NCR photos, submittals, or site records linked to this correspondence.
-              </p>
+            <div className="space-y-3">
+              {record.attachments.map((file) => (
+                <div key={file.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-sm font-bold text-slate-950">{file.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {file.type} - {(file.size / 1000).toFixed(0)} KB - Uploaded by {file.uploadedBy} on {file.uploadedAt.toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+              <p className="text-xs text-slate-500">Mock files only. No real storage or upload is connected in this prototype.</p>
             </div>
           </div>
 
