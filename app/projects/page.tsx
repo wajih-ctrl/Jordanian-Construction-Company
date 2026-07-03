@@ -285,11 +285,13 @@ export default function ProjectsPage() {
                 <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-slate-950 group-hover:translate-x-1 transition-all" />
               </div>
 
-              <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
                   ['Records', project.totalRecords],
                   ['Open', project.openActions],
                   ['Overdue', project.overdueItems],
+                  ['Cost Impact', project.costImpactRecords],
+                  ['Programme', project.programmeImpactRecords],
                   ['Risk', project.claimRiskItems],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">

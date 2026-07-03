@@ -109,7 +109,7 @@ export default function RecordDetailPage() {
 
           <p className="text-base text-foreground mb-4 leading-relaxed">{record.description}</p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-primary/20">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t border-primary/20">
             <div>
               <p className="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Sender</p>
               <p className="text-sm font-bold text-foreground">{record.sender}</p>
@@ -121,6 +121,10 @@ export default function RecordDetailPage() {
             <div>
               <p className="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Category</p>
               <p className="text-sm font-bold text-foreground">{record.mainCategory}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Subcategory</p>
+              <p className="text-sm font-bold text-foreground">{record.subcategory || 'Not assigned'}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-wider">Discipline</p>
@@ -172,6 +176,12 @@ export default function RecordDetailPage() {
               <div className="bg-background border border-border/50 rounded-lg p-4">
                 <p className="text-xs text-muted-foreground font-semibold mb-2 uppercase tracking-wider">Event Date</p>
                 <p className="text-sm font-bold text-foreground">{record.eventDate.toLocaleDateString()}</p>
+              </div>
+            )}
+            {record.instructionDate && (
+              <div className="bg-background border border-border/50 rounded-lg p-4">
+                <p className="text-xs text-muted-foreground font-semibold mb-2 uppercase tracking-wider">Instruction Date</p>
+                <p className="text-sm font-bold text-foreground">{record.instructionDate.toLocaleDateString()}</p>
               </div>
             )}
             {record.responseDueDate && (

@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { getLinkedRecordCount, getLinkedRecordGroups } from '@/lib/record-links';
 
 export default function ReportsPage() {
-  const { selectedProject, records } = useApp();
+  const { selectedProject, records, actions } = useApp();
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -22,6 +22,17 @@ export default function ReportsPage() {
   }
 
   const projectRecords = records.filter((r) => r.projectId === selectedProject.id);
+  const projectActions = actions.filter((action) => action.projectId === selectedProject.id);
+  const openActions = projectActions.filter((action) => action.status !== 'Closed');
+  const closedActions = projectActions.filter((action) => action.status === 'Closed');
+  const claimRiskRecords = projectRecords.filter((record) => record.hasClaimRisk);
+  const responsibilityTrail = Array.from(
+    new Map(
+      projectRecords
+        .filter((record) => record.responsibleParty)
+        .map((record) => [record.responsibleParty, record]),
+    ).values(),
+  );
 
   // Statistics
   const stats = {
@@ -109,6 +120,58 @@ export default function ReportsPage() {
             <p className="text-xs text-muted-foreground mb-2">Claim Risk</p>
             <p className="text-3xl font-bold text-red-600">{stats.claimRisks}</p>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h3 className="font-semibold text-foreground mb-3">Open / Closed Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs font-bold text-amber-900">Open Actions</p>
+                <p className="mt-1 text-2xl font-bold text-amber-900">{openActions.length}</p>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-xs font-bold text-emerald-900">Closed Actions</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-900">{closedActions.length}</p>
+              </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              {projectActions.slice(0, 4).map((action) => (
+                <Link key={action.id} href={`/records/${action.recordId}`} className="block rounded-lg border border-border bg-background p-3 text-xs hover:border-primary">
+                  <span className="font-bold text-foreground">{action.linkedRecord.reference}</span>
+                  <span className="ml-2 text-muted-foreground">{action.status}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h3 className="font-semibold text-foreground mb-3">Responsibility Trail</h3>
+            <div className="space-y-2">
+              {responsibilityTrail.slice(0, 5).map((record) => (
+                <Link key={record.id} href={`/records/${record.id}`} className="block rounded-lg border border-border bg-background p-3 text-xs hover:border-primary">
+                  <p className="font-bold text-foreground">{record.responsibleParty}</p>
+                  <p className="mt-1 text-muted-foreground">{record.reference} - {record.requiredAction || record.title}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h3 className="font-semibold text-foreground mb-3">Claim-Risk Notes</h3>
+            <div className="space-y-2">
+              {claimRiskRecords.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No claim-risk notes for this project.</p>
+              ) : (
+                claimRiskRecords.slice(0, 5).map((record) => (
+                  <Link key={record.id} href={`/records/${record.id}`} className="block rounded-lg border border-red-200 bg-red-50 p-3 text-xs hover:border-red-300">
+                    <p className="font-bold text-red-900">{record.reference} - {record.claimRiskLevel || 'Risk'}</p>
+                    <p className="mt-1 text-red-800">{record.claimRiskNotes}</p>
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
         </div>
 
         {/* Decision Trail */}

@@ -24,6 +24,7 @@ export default function AdminPage() {
   const { currentUser, users, projects, records, actions, addUser, updateUser, deleteUser } = useApp();
   const [activePanel, setActivePanel] = useState<PanelId>('users');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [adminNotice, setAdminNotice] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -48,6 +49,14 @@ export default function AdminPage() {
   const roleCounts = useMemo(
     () => USER_ROLES.map((role) => ({ role, count: users.filter((user) => user.role === role.value).length })),
     [users],
+  );
+  const categoryCounts = useMemo(
+    () => RECORD_CATEGORIES.map((category) => ({ label: category, count: records.filter((record) => record.mainCategory === category).length })).filter((item) => item.count > 0),
+    [records],
+  );
+  const disciplineCounts = useMemo(
+    () => DISCIPLINES.map((discipline) => ({ label: discipline, count: records.filter((record) => record.discipline === discipline).length })).filter((item) => item.count > 0),
+    [records],
   );
 
   const resetForm = () => {
@@ -112,6 +121,35 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Records by Category</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {categoryCounts.map((item) => (
+                  <span key={item.label} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">
+                    {item.label}: {item.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Records by Discipline</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {disciplineCounts.map((item) => (
+                  <span key={item.label} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">
+                    {item.label}: {item.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {adminNotice && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+              {adminNotice}
+            </div>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -336,12 +374,27 @@ export default function AdminPage() {
               ))}
             </div>
             <div className="border-t border-slate-200 p-5">
-              <h3 className="flex items-center gap-2 text-base font-bold text-slate-950"><Shield className="w-4 h-4 text-slate-700" /> Disciplines</h3>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="flex items-center gap-2 text-base font-bold text-slate-950"><Shield className="w-4 h-4 text-slate-700" /> Disciplines</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => setAdminNotice('Mock category/subcategory changes saved for the prototype session.')} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800">
+                    Save Taxonomy
+                  </button>
+                  <button type="button" onClick={() => setAdminNotice('Mock discipline added to the configuration review list.')} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    Add Discipline
+                  </button>
+                </div>
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {DISCIPLINES.map((discipline) => (
                   <span key={discipline} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">{discipline}</span>
                 ))}
               </div>
+            </div>
+            <div className="border-t border-slate-200 p-5">
+              <button type="button" onClick={() => setAdminNotice('Mock status configuration saved. All action statuses remain available in the prototype.')} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">
+                Save Status Configuration
+              </button>
             </div>
           </section>
         )}
@@ -378,6 +431,9 @@ export default function AdminPage() {
               ].map((item) => (
                 <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700">{item}</div>
               ))}
+              <button type="button" onClick={() => setAdminNotice('Mock system activity refreshed with latest project-control events.')} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                Refresh Mock Activity
+              </button>
             </div>
           </section>
         )}

@@ -78,11 +78,13 @@ export default function ActionsPage() {
                   <thead className="border-b border-border bg-secondary/50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Title</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Linked Record</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Responsible</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Priority</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Impact</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Due Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Next Step</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Action</th>
                     </tr>
                   </thead>
@@ -93,6 +95,12 @@ export default function ActionsPage() {
                       <tr key={action.id} className={action.status === 'Closed' ? 'bg-slate-50/70 text-slate-500' : 'hover:bg-secondary/50 transition-colors'}>
                         <td className="px-4 py-3 text-sm text-foreground font-medium truncate max-w-xs">
                           {action.title}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          <Link href={`/records/${action.recordId}`} className="font-mono font-bold text-primary hover:underline">
+                            {action.linkedRecord.reference}
+                          </Link>
+                          <p className="mt-1 max-w-[180px] truncate text-muted-foreground">{action.linkedRecord.title}</p>
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{action.responsiblePerson}</td>
                         <td className="px-4 py-3">
@@ -108,6 +116,7 @@ export default function ActionsPage() {
                         <td className="px-4 py-3">
                           <StatusBadge status={action.status} />
                         </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{action.nextStep}</td>
                         <td className="px-4 py-3">
                           <Link
                             href={`/records/${action.recordId}`}
@@ -155,7 +164,9 @@ export default function ActionsPage() {
                           className={`${column.color} border border-border rounded-lg p-3 hover:border-primary transition-colors block ${action.status === 'Closed' ? 'opacity-70' : ''}`}
                         >
                           <p className="text-xs font-semibold text-foreground mb-1 line-clamp-2">{action.title}</p>
+                          <p className="text-[11px] font-mono text-primary mb-1">{action.linkedRecord.reference}</p>
                           <p className="text-xs text-muted-foreground mb-2">{action.responsiblePerson}</p>
+                          <p className="text-[11px] text-muted-foreground mb-2 line-clamp-2">{action.nextStep}</p>
                           <div className="flex items-center justify-between gap-1">
                             <ImpactChip type={action.impactType as any} />
                             <StatusBadge status={action.priority} type="priority" />
